@@ -18,7 +18,8 @@ l_1_p_1_x:l_1_p1_y:l_1_p_2_x:l_1_p_2_y ... l_12_p_1_x:l_12_p1_y:l_12_p_2_x:l_12_
 
 File: *_AUs.txt
 
-image_number AU01_c:AU01_r AU02_c:AU02_r AU04_c:AU04_r AU05_c:AU05_r AU06_c:AU06_r AU07_c:AU07_r AU09_c:AU09_r AU10_c:AU10_r AU12_c:AU12_r AU14_c:AU14_r AU15_c:AU15_r AU17_c:AU17_r AU20_c:AU20_r AU23_c:AU23_r AU25_c:AU25_r AU26_c:AU26_r AU45_c:AU45_r AU28_c
+image_number AU01_r:AU01_c AU02_r:AU02_c AU04_r:AU04_c AU05_r:AU05_c AU06_r:AU06_c AU07_r:AU07_c AU09_r:AU09_c AU10_r:AU10_c AU12_r:AU12_c AU14_r:AU14_c AU15_r:AU15_c AU17_r:AU17_c AU20_r:AU20_c AU23_r:AU23_c AU25_r:AU25_c AU26_r:AU26_c AU45_r:AU45_c AU28_r
 
-*_c - Intensity (from 0 to 5) of AUs
 *_r - Presense (0 absent, 1 present) of AUs
+*_c - Intensity (from 0 to 5) of AUs
+
