@@ -1,0 +1,24 @@
+File: *_landmarks.txt
+
+image_number face_id bb_x_1:bb_y_1:bb_x_2:bb_y_2 x_1:y_1 x_2:y_2 ... x_66:y_66 x_67:y_67 gaze_0_x:gaze_0_y:gaze_0_z gaze_1_x:gaze_1_y:gaze_1_z pose_Tx:pose_Ty:pose_Tz pose_Rx:pose_Ry:pose_Rz fx:fy:cx:cy l_1_p_1_x:l_1_p1_y:l_1_p_2_x:l_1_p_2_y ... l_12_p_1_x:l_12_p1_y:l_12_p_2_x:l_12_p_2_y
+
+Description:
+
+bb_x_1:bb_y_1:bb_x_2:bb_y_2 - Top left point and bottom right point of bounding box
+face_id - Face id (OpenFace cannot detect face id, always 0)
+x_1:y_1 x_2:y_2 ... x_66:y_66 x_67:y_67 - Landmark points (points from start 17 chin, 2x5 brow, 9 nose, 2x6 eye, 12 outer mouth, 8 inner mouth)
+gaze_0_x:gaze_0_y:gaze_0_z - Eye gaze direction vector in world coordinates for eye 0.
+gaze_1_x:gaze_1_y:gaze_1_z - Eye gaze direction vector in world coordinates for eye 1.
+pose_Tx:pose_Ty:pose_Tz - The location of the head with respect to camera in milimeters (positive Z is away from the camera).
+pose_Rx:pose_Ry:pose_Rz - Rotation is in radians around X,Y,Z axes with the convention R = Rx * Ry * Rz, left-handed positive sign.
+fx:fy:cx:cy - Position of camera
+l_1_p_1_x:l_1_p1_y:l_1_p_2_x:l_1_p_2_y ... l_12_p_1_x:l_12_p1_y:l_12_p_2_x:l_12_p_2_y - Lines points of cube
+
+**********************************
+
+File: *_AUs.txt
+
+image_number AU01_c:AU01_r AU02_c:AU02_r AU04_c:AU04_r AU05_c:AU05_r AU06_c:AU06_r AU07_c:AU07_r AU09_c:AU09_r AU10_c:AU10_r AU12_c:AU12_r AU14_c:AU14_r AU15_c:AU15_r AU17_c:AU17_r AU20_c:AU20_r AU23_c:AU23_r AU25_c:AU25_r AU26_c:AU26_r AU45_c:AU45_r AU28_c
+
+*_c - Intensity (from 0 to 5) of AUs
+*_r - Presense (0 absent, 1 present) of AUs

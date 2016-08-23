@@ -1,0 +1,21 @@
+File: FeatureExtraction.cpp
+
+Description:
+
+./bin/FeatureExtraction -rigid -fdir "../faces" -of "desc" -simalign "aligned" -asvid
+
+Creates file desc_landmarks.txt, desc_AUs.txt and crop images. 
+
+-fdir -> input dir with images
+-of -> prefix of description files
+-simalign -> dir for output images
+-asvid -> treat images as video (must be set)
+
+-noAUs -> doesn't create *_AUs.txt file
+
+-noBbox -> disable bounding box
+-no2Dfp -> disable landmark points
+-noGaze -> disable gaze
+-noPose -> disable pose 
+
+-noCustom -> disable our output, enable OpenFace output
