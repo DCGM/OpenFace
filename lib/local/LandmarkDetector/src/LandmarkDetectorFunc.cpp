@@ -39,20 +39,20 @@
 //
 //       OpenFace: an open source facial behavior analysis toolkit
 //       Tadas Baltrušaitis, Peter Robinson, and Louis-Philippe Morency
-//       in IEEE Winter Conference on Applications of Computer Vision, 2016  
+//       in IEEE Winter Conference on Applications of Computer Vision, 2016
 //
 //       Rendering of Eyes for Eye-Shape Registration and Gaze Estimation
-//       Erroll Wood, Tadas Baltrušaitis, Xucong Zhang, Yusuke Sugano, Peter Robinson, and Andreas Bulling 
-//       in IEEE International. Conference on Computer Vision (ICCV),  2015 
+//       Erroll Wood, Tadas Baltrušaitis, Xucong Zhang, Yusuke Sugano, Peter Robinson, and Andreas Bulling
+//       in IEEE International. Conference on Computer Vision (ICCV),  2015
 //
 //       Cross-dataset learning and person-speci?c normalisation for automatic Action Unit detection
-//       Tadas Baltrušaitis, Marwa Mahmoud, and Peter Robinson 
-//       in Facial Expression Recognition and Analysis Challenge, 
-//       IEEE International Conference on Automatic Face and Gesture Recognition, 2015 
+//       Tadas Baltrušaitis, Marwa Mahmoud, and Peter Robinson
+//       in Facial Expression Recognition and Analysis Challenge,
+//       IEEE International Conference on Automatic Face and Gesture Recognition, 2015
 //
 //       Constrained Local Neural Fields for robust facial landmark detection in the wild.
-//       Tadas Baltrušaitis, Peter Robinson, and Louis-Philippe Morency. 
-//       in IEEE Int. Conference on Computer Vision Workshops, 300 Faces in-the-Wild Challenge, 2013.    
+//       Tadas Baltrušaitis, Peter Robinson, and Louis-Philippe Morency.
+//       in IEEE Int. Conference on Computer Vision Workshops, 300 Faces in-the-Wild Challenge, 2013.
 //
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -77,10 +77,10 @@ cv::Vec6d LandmarkDetector::GetPoseCamera(const CLNF& clnf_model, double fx, dou
 	if(!clnf_model.detected_landmarks.empty() && clnf_model.params_global[0] != 0)
 	{
 		double Z = fx / clnf_model.params_global[0];
-	
+
 		double X = ((clnf_model.params_global[4] - cx) * (1.0/fx)) * Z;
 		double Y = ((clnf_model.params_global[5] - cy) * (1.0/fy)) * Z;
-	
+
 		return cv::Vec6d(X, Y, Z, clnf_model.params_global[1], clnf_model.params_global[2], clnf_model.params_global[3]);
 	}
 	else
@@ -96,10 +96,10 @@ cv::Vec6d LandmarkDetector::GetPoseWorld(const CLNF& clnf_model, double fx, doub
 	if(!clnf_model.detected_landmarks.empty() && clnf_model.params_global[0] != 0)
 	{
 		double Z = fx / clnf_model.params_global[0];
-	
+
 		double X = ((clnf_model.params_global[4] - cx) * (1.0/fx)) * Z;
 		double Y = ((clnf_model.params_global[5] - cy) * (1.0/fy)) * Z;
-	
+
 		// Here we correct for the camera orientation, for this need to determine the angle the camera makes with the head pose
 		double z_x = cv::sqrt(X * X + Z * Z);
 		double eul_x = atan2(Y, z_x);
@@ -132,10 +132,10 @@ cv::Vec6d LandmarkDetector::GetCorrectedPoseWorld(const CLNF& clnf_model, double
 	{
 		// This is used as an initial estimate for the iterative PnP algorithm
 		double Z = fx / clnf_model.params_global[0];
-	
+
 		double X = ((clnf_model.params_global[4] - cx) * (1.0/fx)) * Z;
 		double Y = ((clnf_model.params_global[5] - cy) * (1.0/fy)) * Z;
- 
+
 		// Correction for orientation
 
 		// 2D points
@@ -153,14 +153,14 @@ cv::Vec6d LandmarkDetector::GetCorrectedPoseWorld(const CLNF& clnf_model, double
 
 		// The camera matrix
 		cv::Matx33d camera_matrix(fx, 0, cx, 0, fy, cy, 0, 0, 1);
-		
+
 		cv::Vec3d vec_trans(X, Y, Z);
 		cv::Vec3d vec_rot(clnf_model.params_global[1], clnf_model.params_global[2], clnf_model.params_global[3]);
-		
+
 		cv::solvePnP(landmarks_3D, landmarks_2D, camera_matrix, cv::Mat(), vec_rot, vec_trans, true);
 
 		cv::Vec3d euler = LandmarkDetector::AxisAngle2Euler(vec_rot);
-		
+
 		return cv::Vec6d(vec_trans[0], vec_trans[1], vec_trans[2], vec_rot[0], vec_rot[1], vec_rot[2]);
 	}
 	else
@@ -178,10 +178,10 @@ cv::Vec6d LandmarkDetector::GetCorrectedPoseCamera(const CLNF& clnf_model, doubl
 	{
 
 		double Z = fx / clnf_model.params_global[0];
-	
+
 		double X = ((clnf_model.params_global[4] - cx) * (1.0/fx)) * Z;
 		double Y = ((clnf_model.params_global[5] - cy) * (1.0/fy)) * Z;
-	
+
 		// Correction for orientation
 
 		// 3D points
@@ -192,17 +192,17 @@ cv::Vec6d LandmarkDetector::GetCorrectedPoseCamera(const CLNF& clnf_model, doubl
 
 		// 2D points
 		cv::Mat_<double> landmarks_2D = clnf_model.detected_landmarks;
-				
+
 		landmarks_2D = landmarks_2D.reshape(1, 2).t();
 
 		// Solving the PNP model
 
 		// The camera matrix
 		cv::Matx33d camera_matrix(fx, 0, cx, 0, fy, cy, 0, 0, 1);
-		
+
 		cv::Vec3d vec_trans(X, Y, Z);
 		cv::Vec3d vec_rot(clnf_model.params_global[1], clnf_model.params_global[2], clnf_model.params_global[3]);
-		
+
 		cv::solvePnP(landmarks_3D, landmarks_2D, camera_matrix, cv::Mat(), vec_rot, vec_trans, true);
 
 		// Here we correct for the camera orientation, for this need to determine the angle the camera makes with the head pose
@@ -218,7 +218,7 @@ cv::Vec6d LandmarkDetector::GetCorrectedPoseCamera(const CLNF& clnf_model, doubl
 		cv::Matx33d corrected_rotation = camera_rotation * head_rotation;
 
 		cv::Vec3d euler_corrected = LandmarkDetector::RotationMatrix2Euler(corrected_rotation);
-		
+
 		return cv::Vec6d(vec_trans[0], vec_trans[1], vec_trans[2], euler_corrected[0], euler_corrected[1], euler_corrected[2]);
 	}
 	else
@@ -262,8 +262,8 @@ void CorrectGlobalParametersVideo(const cv::Mat_<uchar> &grayscale_image, CLNF& 
 		scaling = 1;
 		image = grayscale_image(roi).clone();
 	}
-		
-	// Resizing the template			
+
+	// Resizing the template
 	cv::Mat corr_out;
 	cv::matchTemplate(image, clnf_model.face_template, corr_out, CV_TM_CCOEFF_NORMED);
 
@@ -277,13 +277,13 @@ void CorrectGlobalParametersVideo(const cv::Mat_<uchar> &grayscale_image, CLNF& 
 
 	double shift_x = out_bbox.x - (double)init_box.x;
 	double shift_y = out_bbox.y - (double)init_box.y;
-			
+
 	clnf_model.params_global[4] = clnf_model.params_global[4] + shift_x;
 	clnf_model.params_global[5] = clnf_model.params_global[5] + shift_y;
-	
+
 }
 
-bool LandmarkDetector::DetectLandmarksInVideo(const cv::Mat_<uchar> &grayscale_image, const cv::Mat_<float> &depth_image, CLNF& clnf_model, FaceModelParameters& params)
+bool LandmarkDetector::DetectLandmarksInVideo(const cv::Mat_<uchar> &grayscale_image, const cv::Mat_<float> &depth_image, CLNF& clnf_model, FaceModelParameters& params,  cv::Rect_<double> in_bounding_box)
 {
 	// First need to decide if the landmarks should be "detected" or "tracked"
 	// Detected means running face detection and a larger search area, tracked means initialising from previous step
@@ -321,43 +321,49 @@ bool LandmarkDetector::DetectLandmarksInVideo(const cv::Mat_<uchar> &grayscale_i
 		else
 		{
 			// indicate that tracking is a success
-			clnf_model.failures_in_a_row = -1;			
+			clnf_model.failures_in_a_row = -1;
 			UpdateTemplate(grayscale_image, clnf_model);
 		}
 	}
 
 	// This is used for both detection (if it the tracking has not been initialised yet) or if the tracking failed (however we do this every n frames, for speed)
 	// This also has the effect of an attempt to reinitialise just after the tracking has failed, which is useful during large motions
-	if((!clnf_model.tracking_initialised && (clnf_model.failures_in_a_row + 1) % (params.reinit_video_every * 6) == 0) 
+	if(!clnf_model.tracking_initialised
 		|| (clnf_model.tracking_initialised && !clnf_model.detection_success && params.reinit_video_every > 0 && clnf_model.failures_in_a_row % params.reinit_video_every == 0))
 	{
 
+		bool face_detection_success = false;
 		cv::Rect_<double> bounding_box;
+		if( in_bounding_box.x > -100){
+			bounding_box = in_bounding_box;
+			face_detection_success = bounding_box.x != 0 && bounding_box.width != 0;
+			cout << "Have BB " << face_detection_success << endl;
+		} else {
+			cout << "Detecting" << endl;
+			// If the face detector has not been initialised read it in
+			if(clnf_model.face_detector_HAAR.empty())
+			{
+				clnf_model.face_detector_HAAR.load(params.face_detector_location);
+				clnf_model.face_detector_location = params.face_detector_location;
+			}
 
-		// If the face detector has not been initialised read it in
-		if(clnf_model.face_detector_HAAR.empty())
-		{
-			clnf_model.face_detector_HAAR.load(params.face_detector_location);
-			clnf_model.face_detector_location = params.face_detector_location;
-		}
+			cv::Point preference_det(-1, -1);
+			if(clnf_model.preference_det.x != -1 && clnf_model.preference_det.y != -1)
+			{
+				preference_det.x = clnf_model.preference_det.x * grayscale_image.cols;
+				preference_det.y = clnf_model.preference_det.y * grayscale_image.rows;
+				clnf_model.preference_det = cv::Point(-1, -1);
+			}
 
-		cv::Point preference_det(-1, -1);
-		if(clnf_model.preference_det.x != -1 && clnf_model.preference_det.y != -1)
-		{
-			preference_det.x = clnf_model.preference_det.x * grayscale_image.cols;
-			preference_det.y = clnf_model.preference_det.y * grayscale_image.rows;
-			clnf_model.preference_det = cv::Point(-1, -1);
-		}
-
-		bool face_detection_success;
-		if(params.curr_face_detector == FaceModelParameters::HOG_SVM_DETECTOR)
-		{
-			double confidence;
-			face_detection_success = LandmarkDetector::DetectSingleFaceHOG(bounding_box, grayscale_image, clnf_model.face_detector_HOG, confidence, preference_det);
-		}
-		else if(params.curr_face_detector == FaceModelParameters::HAAR_DETECTOR)
-		{
-			face_detection_success = LandmarkDetector::DetectSingleFace(bounding_box, grayscale_image, clnf_model.face_detector_HAAR, preference_det);
+			if(params.curr_face_detector == FaceModelParameters::HOG_SVM_DETECTOR)
+			{
+				double confidence;
+				face_detection_success = LandmarkDetector::DetectSingleFaceHOG(bounding_box, grayscale_image, clnf_model.face_detector_HOG, confidence, preference_det);
+			}
+			else if(params.curr_face_detector == FaceModelParameters::HAAR_DETECTOR)
+			{
+				face_detection_success = LandmarkDetector::DetectSingleFace(bounding_box, grayscale_image, clnf_model.face_detector_HAAR, preference_det);
+			}
 		}
 
 		// Attempt to detect landmarks using the detected face (if unseccessful the detection will be ignored)
@@ -365,7 +371,7 @@ bool LandmarkDetector::DetectLandmarksInVideo(const cv::Mat_<uchar> &grayscale_i
 		{
 			// Indicate that tracking has started as a face was detected
 			clnf_model.tracking_initialised = true;
-						
+
 			// Keep track of old model values so that they can be restored if redetection fails
 			cv::Vec6d params_global_init = clnf_model.params_global;
 			cv::Mat_<double> params_local_init = clnf_model.params_local.clone();
@@ -375,7 +381,7 @@ bool LandmarkDetector::DetectLandmarksInVideo(const cv::Mat_<uchar> &grayscale_i
 
 			// Use the detected bounding box and empty local parameters
 			clnf_model.params_local.setTo(0);
-			clnf_model.pdm.CalcParams(clnf_model.params_global, bounding_box, clnf_model.params_local);		
+			clnf_model.pdm.CalcParams(clnf_model.params_global, bounding_box, clnf_model.params_local);
 
 			// Make sure the search size is large
 			params.window_sizes_current = params.window_sizes_init;
@@ -401,7 +407,7 @@ bool LandmarkDetector::DetectLandmarksInVideo(const cv::Mat_<uchar> &grayscale_i
 			}
 			else
 			{
-				clnf_model.failures_in_a_row = -1;				
+				clnf_model.failures_in_a_row = -1;
 				UpdateTemplate(grayscale_image, clnf_model);
 				return true;
 			}
@@ -415,13 +421,13 @@ bool LandmarkDetector::DetectLandmarksInVideo(const cv::Mat_<uchar> &grayscale_i
 	}
 
 	// un-initialise the tracking
-	if(	clnf_model.failures_in_a_row > 100)
+	if(	clnf_model.failures_in_a_row > 20)
 	{
 		clnf_model.tracking_initialised = false;
 	}
 
 	return clnf_model.detection_success;
-	
+
 }
 
 bool LandmarkDetector::DetectLandmarksInVideo(const cv::Mat_<uchar> &grayscale_image, const cv::Mat_<float> &depth_image, const cv::Rect_<double> bounding_box, CLNF& clnf_model, FaceModelParameters& params)
@@ -430,7 +436,7 @@ bool LandmarkDetector::DetectLandmarksInVideo(const cv::Mat_<uchar> &grayscale_i
 	{
 		// calculate the local and global parameters from the generated 2D shape (mapping from the 2D to 3D because camera params are unknown)
 		clnf_model.params_local.setTo(0);
-		clnf_model.pdm.CalcParams(clnf_model.params_global, bounding_box, clnf_model.params_local);		
+		clnf_model.pdm.CalcParams(clnf_model.params_global, bounding_box, clnf_model.params_local);
 
 		// indicate that face was detected so initialisation is not necessary
 		clnf_model.tracking_initialised = true;
@@ -440,9 +446,9 @@ bool LandmarkDetector::DetectLandmarksInVideo(const cv::Mat_<uchar> &grayscale_i
 
 }
 
-bool LandmarkDetector::DetectLandmarksInVideo(const cv::Mat_<uchar> &grayscale_image, CLNF& clnf_model, FaceModelParameters& params)
+bool LandmarkDetector::DetectLandmarksInVideo(const cv::Mat_<uchar> &grayscale_image, CLNF& clnf_model, FaceModelParameters& params, cv::Rect_<double> bounding_box)
 {
-	return DetectLandmarksInVideo(grayscale_image, cv::Mat_<float>(), clnf_model, params);
+	return DetectLandmarksInVideo(grayscale_image, cv::Mat_<float>(), clnf_model, params, bounding_box);
 }
 
 bool LandmarkDetector::DetectLandmarksInVideo(const cv::Mat_<uchar> &grayscale_image, const cv::Rect_<double> bounding_box, CLNF& clnf_model, FaceModelParameters& params)
@@ -477,10 +483,10 @@ bool LandmarkDetector::DetectLandmarksInImage(const cv::Mat_<uchar> &grayscale_i
 		// Assume the face is close to frontal
 		rotation_hypotheses.push_back(cv::Vec3d(0,0,0));
 	}
-	
+
 	// Use the initialisation size for the landmark detection
 	params.window_sizes_current = params.window_sizes_init;
-	
+
 	// Store the current best estimate
 	double best_likelihood;
 	cv::Vec6d best_global_parameters;
@@ -508,8 +514,8 @@ bool LandmarkDetector::DetectLandmarksInImage(const cv::Mat_<uchar> &grayscale_i
 
 		// calculate the local and global parameters from the generated 2D shape (mapping from the 2D to 3D because camera params are unknown)
 		clnf_model.pdm.CalcParams(clnf_model.params_global, bounding_box, clnf_model.params_local, rotation_hypotheses[hypothesis]);
-	
-		bool success = clnf_model.DetectLandmarks(grayscale_image, depth_image, params);	
+
+		bool success = clnf_model.DetectLandmarks(grayscale_image, depth_image, params);
 
 		if(hypothesis == 0 || best_likelihood < clnf_model.model_likelihood)
 		{
@@ -565,7 +571,7 @@ bool LandmarkDetector::DetectLandmarksInImage(const cv::Mat_<uchar> &grayscale_i
 		clnf_model.face_detector_HAAR.load(params.face_detector_location);
 		clnf_model.face_detector_location = params.face_detector_location;
 	}
-		
+
 	// Detect the face first
 	if(params.curr_face_detector == FaceModelParameters::HOG_SVM_DETECTOR)
 	{

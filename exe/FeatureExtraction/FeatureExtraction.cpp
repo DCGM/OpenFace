@@ -62,6 +62,7 @@
 // System includes
 #include <fstream>
 #include <sstream>
+#include <map>
 
 // OpenCV includes
 #include <opencv2/videoio/videoio.hpp>  // Video write
@@ -164,6 +165,8 @@ void output_HOG_frame(std::ofstream* hog_file, bool good_frame, const cv::Mat_<d
 double fps_tracker = -1.0;
 int64 t0 = 0;
 
+int frameID = 0;
+
 // Visualising the results
 void visualise_tracking(cv::Mat& captured_image, const LandmarkDetector::CLNF& face_model, const LandmarkDetector::FaceModelParameters& det_parameters, cv::Point3f gazeDirection0, cv::Point3f gazeDirection1, int frame_count, double fx, double fy, double cx, double cy)
 {
@@ -220,6 +223,9 @@ void visualise_tracking(cv::Mat& captured_image, const LandmarkDetector::CLNF& f
 	{
 		cv::namedWindow("tracking_result", 1);
 		cv::imshow("tracking_result", captured_image);
+        char buffer[255];
+    	std::sprintf(buffer, "det_%05d.jpg", (int)frameID);
+        cv::imwrite(buffer, captured_image);
 	}
 }
 
@@ -246,8 +252,23 @@ void post_process_output_file(FaceAnalysis::FaceAnalyser& face_analyser, string 
 
 int main (int argc, char **argv)
 {
-
 	vector<string> arguments = get_arguments(argc, argv);
+
+	map<int, cv::Rect_<double>> bBoxes;
+	bool haveFrames = false;
+
+	for( int i = 0; i < arguments.size(); i++){
+		if( arguments[i] == "-bb"){
+			string bbFile = arguments[i+1];
+			std::ifstream file(bbFile);
+			int frame;
+			double x, y, w, h;
+			while(file >> frame >> x >> y >> w >> h){
+				bBoxes[frame] = cv::Rect_<double>(x, y, w, h);
+			}
+			haveFrames = true;
+		}
+	}
 
 	// Some initial parameters that can be overriden from command line
 	vector<string> input_files, depth_directories, output_files, tracked_videos_output;
@@ -394,6 +415,7 @@ int main (int argc, char **argv)
 	// Creating a  face analyser that will be used for AU extraction
 	FaceAnalysis::FaceAnalyser face_analyser(vector<cv::Vec3d>(), 0.7, 112, 112, au_loc, tri_loc);
 
+	int frameCounter = 0;
 	while(!done) // this is not a for loop as we might also be reading from a webcam
 	{
 
@@ -565,117 +587,134 @@ int main (int argc, char **argv)
 
 			if(video_input || images_as_video)
 			{
-				detection_success = LandmarkDetector::DetectLandmarksInVideo(grayscale_image, face_model, det_parameters);
+				cout << frameCounter << ' ' << haveFrames << endl;
+				if(haveFrames){
+					cv::Rect_<double> bbox(0,0,0,0);
+					if( bBoxes.count(frameCounter)){
+						bbox = bBoxes[frameCounter];
+					}
+
+					detection_success = LandmarkDetector::DetectLandmarksInVideo(grayscale_image, face_model, det_parameters, bbox);
+				} else {
+					detection_success = LandmarkDetector::DetectLandmarksInVideo(grayscale_image, face_model, det_parameters);
+				}
+				frameCounter++;
 			}
 			else
 			{
 				detection_success = LandmarkDetector::DetectLandmarksInImage(grayscale_image, face_model, det_parameters);
 			}
+			if(detection_success){
+				// Gaze tracking, absolute gaze direction
+				cv::Point3f gazeDirection0(0, 0, -1);
+				cv::Point3f gazeDirection1(0, 0, -1);
 
-			// Gaze tracking, absolute gaze direction
-			cv::Point3f gazeDirection0(0, 0, -1);
-			cv::Point3f gazeDirection1(0, 0, -1);
-
-			if (det_parameters.track_gaze && detection_success && face_model.eye_model)
-			{
-				FaceAnalysis::EstimateGaze(face_model, gazeDirection0, fx, fy, cx, cy, true);
-				FaceAnalysis::EstimateGaze(face_model, gazeDirection1, fx, fy, cx, cy, false);
-			}
-
-			// Do face alignment
-			cv::Mat sim_warped_img;
-			cv::Mat_<double> hog_descriptor;
-
-			// But only if needed in output
-			if(!output_similarity_align.empty() || hog_output_file.is_open() || output_AUs)
-			{
-				face_analyser.AddNextFrame(captured_image, face_model, time_stamp, false, !det_parameters.quiet_mode);
-				face_analyser.GetLatestAlignedFace(sim_warped_img);
-
-				if(!det_parameters.quiet_mode)
+				if (det_parameters.track_gaze && detection_success && face_model.eye_model)
 				{
-					cv::imshow("sim_warp", sim_warped_img);
+					FaceAnalysis::EstimateGaze(face_model, gazeDirection0, fx, fy, cx, cy, true);
+					FaceAnalysis::EstimateGaze(face_model, gazeDirection1, fx, fy, cx, cy, false);
 				}
-				if(hog_output_file.is_open())
-				{
-					FaceAnalysis::Extract_FHOG_descriptor(hog_descriptor, sim_warped_img, num_hog_rows, num_hog_cols);
 
-					if(visualise_hog && !det_parameters.quiet_mode)
+				// Do face alignment
+				cv::Mat sim_warped_img;
+				cv::Mat_<double> hog_descriptor;
+
+				// But only if needed in output
+				if(!output_similarity_align.empty() || hog_output_file.is_open() || output_AUs)
+				{
+					face_analyser.AddNextFrame(captured_image, face_model, time_stamp, false, !det_parameters.quiet_mode);
+					face_analyser.GetLatestAlignedFace(sim_warped_img);
+
+					if(!det_parameters.quiet_mode)
 					{
-						cv::Mat_<double> hog_descriptor_vis;
-						FaceAnalysis::Visualise_FHOG(hog_descriptor, num_hog_rows, num_hog_cols, hog_descriptor_vis);
-						cv::imshow("hog", hog_descriptor_vis);
+						cv::imshow("sim_warp", sim_warped_img);
+					}
+					if(hog_output_file.is_open())
+					{
+						FaceAnalysis::Extract_FHOG_descriptor(hog_descriptor, sim_warped_img, num_hog_rows, num_hog_cols);
+
+						if(visualise_hog && !det_parameters.quiet_mode)
+						{
+							cv::Mat_<double> hog_descriptor_vis;
+							FaceAnalysis::Visualise_FHOG(hog_descriptor, num_hog_rows, num_hog_cols, hog_descriptor_vis);
+							cv::imshow("hog", hog_descriptor_vis);
+						}
 					}
 				}
-			}
 
-			// Work out the pose of the head from the tracked model
-			cv::Vec6d pose_estimate;
-			if(use_world_coordinates)
-			{
-				pose_estimate = LandmarkDetector::GetCorrectedPoseWorld(face_model, fx, fy, cx, cy);
-			}
-			else
-			{
-				pose_estimate = LandmarkDetector::GetCorrectedPoseCamera(face_model, fx, fy, cx, cy);
-			}
-
-			if(hog_output_file.is_open())
-			{
-				output_HOG_frame(&hog_output_file, detection_success, hog_descriptor, num_hog_rows, num_hog_cols);
-			}
-
-			// Write the similarity normalised output
-			if(!output_similarity_align.empty())
-			{
-
-				if (sim_warped_img.channels() == 3 && grayscale)
+				// Work out the pose of the head from the tracked model
+				cv::Vec6d pose_estimate;
+				if(use_world_coordinates)
 				{
-					cvtColor(sim_warped_img, sim_warped_img, CV_BGR2GRAY);
+					pose_estimate = LandmarkDetector::GetCorrectedPoseWorld(face_model, fx, fy, cx, cy);
+				}
+				else
+				{
+					pose_estimate = LandmarkDetector::GetCorrectedPoseCamera(face_model, fx, fy, cx, cy);
 				}
 
-				char name[100];
-
-				// output the frame number
-				std::sprintf(name, "frame_det_%06d.bmp", frame_count);
-
-				// Construct the output filename
-				boost::filesystem::path slash("/");
-
-				std::string preferredSlash = slash.make_preferred().string();
-
-				string out_file = output_similarity_align[f_n] + preferredSlash + string(name);
-				bool write_success = imwrite(out_file, sim_warped_img);
-
-				if (!write_success)
+				if(hog_output_file.is_open())
 				{
-					cout << "Could not output similarity aligned image image" << endl;
-					return 1;
+					output_HOG_frame(&hog_output_file, detection_success, hog_descriptor, num_hog_rows, num_hog_cols);
+				}
+
+				// Write the similarity normalised output
+				if(!output_similarity_align.empty())
+				{
+
+					if (sim_warped_img.channels() == 3 && grayscale)
+					{
+						cvtColor(sim_warped_img, sim_warped_img, CV_BGR2GRAY);
+					}
+
+					char name[100];
+
+					// output the frame number
+					std::sprintf(name, "frame_det_%06d.bmp", frame_count);
+
+					// Construct the output filename
+					boost::filesystem::path slash("/");
+
+					std::string preferredSlash = slash.make_preferred().string();
+
+					string out_file = output_similarity_align[f_n] + preferredSlash + string(name);
+					bool write_success = imwrite(out_file, sim_warped_img);
+
+					if (!write_success)
+					{
+						cout << "Could not output similarity aligned image image" << endl;
+						return 1;
+					}
+				}
+
+				// Visualising the tracker
+				visualise_tracking(captured_image, face_model, det_parameters, gazeDirection0, gazeDirection1, frame_count, fx, fy, cx, cy);
+
+				// Output the landmarks, pose, gaze, parameters and AUs
+	            if (output_custom && detection_success)
+	            {
+	                outputAllFeaturesCustom(&output_file_landmarks, output_bbox, output_2D_landmarks, output_3D_landmarks, output_model_params, output_pose, output_AUs, output_gaze,
+					face_model, frame_count, time_stamp, gazeDirection0, gazeDirection1,
+					pose_estimate, fx, fy, cx, cy, face_analyser);
+	            }
+	            if (!output_custom || (output_custom && output_AUs))
+	            {
+	                outputAllFeatures(&output_file, output_2D_landmarks, output_3D_landmarks, output_model_params, output_pose, output_AUs, output_gaze,
+	                face_model, frame_count, time_stamp, detection_success, gazeDirection0, gazeDirection1,
+	                pose_estimate, fx, fy, cx, cy, face_analyser);
+	            }
+				// output the tracked video
+				if(!tracked_videos_output.empty())
+				{
+					writerFace << captured_image;
+				}
+			} else {
+				if (!det_parameters.quiet_mode)
+				{
+					cv::namedWindow("tracking_result", 1);
+					cv::imshow("tracking_result", captured_image);
 				}
 			}
-
-			// Visualising the tracker
-			visualise_tracking(captured_image, face_model, det_parameters, gazeDirection0, gazeDirection1, frame_count, fx, fy, cx, cy);
-
-			// Output the landmarks, pose, gaze, parameters and AUs
-            if (output_custom && detection_success)
-            {
-                outputAllFeaturesCustom(&output_file_landmarks, output_bbox, output_2D_landmarks, output_3D_landmarks, output_model_params, output_pose, output_AUs, output_gaze,
-				face_model, frame_count, time_stamp, gazeDirection0, gazeDirection1,
-				pose_estimate, fx, fy, cx, cy, face_analyser);
-            }
-            if (!output_custom || (output_custom && output_AUs))
-            {
-                outputAllFeatures(&output_file, output_2D_landmarks, output_3D_landmarks, output_model_params, output_pose, output_AUs, output_gaze,
-                face_model, frame_count, time_stamp, detection_success, gazeDirection0, gazeDirection1,
-                pose_estimate, fx, fy, cx, cy, face_analyser);
-            }
-			// output the tracked video
-			if(!tracked_videos_output.empty())
-			{
-				writerFace << captured_image;
-			}
-
 			if(video_input)
 			{
 				video_capture >> captured_image;
